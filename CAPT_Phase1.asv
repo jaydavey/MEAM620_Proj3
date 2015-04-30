@@ -8,9 +8,9 @@
 close all; clearvars; clc;
 
 %% Program variables
-Nr = 20; %Number of robots
+Nr = 50; %Number of robots
 Ns = Nr;   %Number of starting locations
-Ng = 20; %Number of goal locations
+Ng = 100; %Number of goal locations
 
 R = 0.08; % Radius of robot in meters
 
@@ -18,7 +18,7 @@ R = 0.08; % Radius of robot in meters
 % will fly in
 xmax = 4; xmin = -2; %meters
 ymax = 1; ymin = -2; %meters
-zmax = 0; zmin = 0; %meters
+zmax = 2; zmin = 0; %meters
 
 %% Setup the figure for showing the alogorithm's output
 h = figure(1);
@@ -76,14 +76,12 @@ end
 A = pdist2(S,G);
 D = A.*A;
 
-% find assignments between start and goals
+% Find the matching goals to the starting locations
 [assignment,cost] = munkres(D);
 
-% Draw lines between the matching start-goals
-for i = 1:Ns
-    pl = plot3([S(i,1),G(assignment(i),1)],[S(i,2),G(assignment(i),2)],[S(i,3),G(assignment(i),3)],'-');
-    set(pl, 'color',[0,0.8,0]);
-end
+
+
+
 
 
 

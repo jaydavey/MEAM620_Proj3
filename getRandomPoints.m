@@ -64,7 +64,7 @@ if length(bound)==4
                 % Check pt doesn't collide with other start pts
                 ptlist = repmat(pt,size(G,1),1);
                 Rmin = min(pdist2(ptlist,G,'euclidean','Smallest',1));
-                if Rmin>(R+R*sqrt(2))
+                if Rmin>(2*R*sqrt(2))
                     new_point_found = 1;
                 else
                     % Generate a random point
@@ -91,7 +91,7 @@ else
                 % Check pt doesn't collide with other start pts
                 ptlist = repmat(pt,size(S,1),1);
                 Rmin = min(pdist2(ptlist,S,'euclidean','Smallest',1));
-                if Rmin>(R+R*sqrt(2))
+                if Rmin>(2*R*sqrt(2))
                     new_point_found = 1;
                 else
                     % Generate a random point
