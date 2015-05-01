@@ -81,10 +81,9 @@ D = A.*A;
 
 % Draw lines between the matching start-goals
 for i = 1:Ns
-    if ~(assignment(i)==0)
-        pl = plot3([S(i,1),G(assignment(i),1)],[S(i,2),G(assignment(i),2)],[S(i,3),G(assignment(i),3)],'-');
-        set(pl, 'color',[0,0.8,0]);
-    end
+    if assignment(
+    pl = plot3([S(i,1),G(assignment(i),1)],[S(i,2),G(assignment(i),2)],[S(i,3),G(assignment(i),3)],'-');
+    set(pl, 'color',[0,0.8,0]);
 end
 
 
