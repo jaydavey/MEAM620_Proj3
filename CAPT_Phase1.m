@@ -10,7 +10,7 @@ close all; clearvars; clc;
 %% Program variables
 Nr = 40; %Number of robots
 Ns = Nr;   %Number of starting locations
-Ng = 20; %Number of goal locations
+Ng = 30; %Number of goal locations
 
 R = 0.08; % Radius of robot in meters
 
@@ -88,10 +88,10 @@ for i = 1:Ns
 end
 
 
-%Start Locations:
+%Start Locations (meters):
 S
 
-%Goal Locations:
+%Goal Locations (meters):
 G
 
 
