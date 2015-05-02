@@ -76,6 +76,8 @@ end
 A = pdist2(S,G);
 D = A.*A;
 
+Nquad = [10 15]; %Number of quadrotors for Phase 2 Part1**
+
 % find assignments between start and goals
 [assignment,cost] = munkres(D);
 
