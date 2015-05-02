@@ -8,6 +8,8 @@ function [F, M, trpy, drpy] = controller(qd, t, qn, params)
 
 % =================== Your code goes here ===================
 
+
+
 %%Control Parameters
 kdx = 5;
 kpx = 10;
@@ -30,7 +32,7 @@ kp_psi = 1;
 
 
 %Get Nano parameters
-params = nanoplus();
+
 m = params.mass;
 g = 9.81; %[m/s^2]
 
