@@ -17,14 +17,16 @@ end
 % Check total simulation time
 time_check = time > time_tol;
 % Check collision criteria
-col_check = collision_check(pos_col_check, 0.3);
+col_check = collision_check(pos_col_check, 0.1);
 
 if (pos_check && vel_check)
    terminate_cond = 0; %terminate_cond = 1; % Robot reaches goal and stops, successful
 elseif time_check
     terminate_cond = 2; % Robot doesn't reach goal within given time, not complete
+    fprintf('Robots fail to reach goal!\n');
 elseif col_check
     terminate_cond = 3; % Robot collide with each other
+    fprintf('Collision!\n');
 else
     terminate_cond = 0;
 end
