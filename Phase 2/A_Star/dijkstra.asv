@@ -161,9 +161,10 @@ if (astar == false)
         u = (u1);
         
         scanned(u) = 0; %Remove u from Q
-        if(scanned(goal_i) == 0)
-            break;
-        end
+        %if(scanned(goal_i) == 0)  %Comented out for project 3 so we get
+        %all the nodes!
+        %    break;
+        %end
         
         neighbors = getNeighbors(u, occp_grid, neigh_offset , num_nodes, map_sizes, Cols, Rows, W);  %Gets list of neighbors
         

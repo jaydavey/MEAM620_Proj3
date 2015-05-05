@@ -37,6 +37,26 @@ map_size_z = ceil((bound_zf/z_res) - (bound_zi/z_res));
 occp_grid = zeros(map_size_x, map_size_y, map_size_z);
 
 
+
+%1.1) We now get the number of robots, the number of goals, the start and
+%goals!
+
+robot_ind = strfind(type, 'robots');
+robot_ind = find(~cellfun(@isempty,robot_ind));
+robots = xi(robot_ind);
+goal_ind = strfind(type, 'objective');
+goal_ind = find(~cellfun(@isempty,goal_ind));
+objectives = xi(goal_ind);
+
+start_ind = strfind(type, 'start');
+start_ind = find(~cellfun(@isempty,start_ind));
+start = [xi(start_ind) yi(start_ind)];
+
+goal_ind = strfind(type, 'goal');
+goal_ind = find(~cellfun(@isempty,goal_ind));
+goals = [xi(goal_ind) yi(goal_ind)];
+
+
 %2.) Now we add the margin of safety to the obstacles. This should be described by
 %rows 2 to the end of the vectors. Since the data is organized in
 %increasing coordinates (initial coord is less than final coords) we can
@@ -137,7 +157,32 @@ m_zf(eq) = m_zf(eq) - 1; %0-index
 m_zf = m_zf + 1; %1-index
 
 
+%Now for the start and goals
+m_startx = start(:,1);
+v_startx = start(:,1);
+eq = start(:,1);
+m_startx = floor((v_startx./xy_res) - (bound_xi/xy_res));
+v_startx = m_startx.*xy_res + bound_xi; 
+eq = abs(v_startx - start(:,1)) <= eps(start(:,1))*4;
+m_startx(eq) = m_startx(eq) - 1; %0-index 
+m_startx = m_startx + 1; %1-index
 
+m_starty = start(:,2);
+v_starty = start(:,2);
+eq = start(:,2);
+m_starty = floor((v_starty./xy_res) - (bound_yi/xy_res));
+v_starty = m_starty.*xy_res + bound_yi; 
+eq = abs(v_starty - start(:,2)) <= eps(start(:,2))*4;
+m_starty(eq) = m_starty(eq) - 1; %0-index 
+m_starty = m_starty + 1; %1-index
+
+
+
+
+
+
+
+%Ensure the bounds are ok!
 m_xi(m_xi <= 1) = 1;
 m_xf(m_xf >= map_size_x) = map_size_x;
 
@@ -146,6 +191,14 @@ m_yf(m_yf >= map_size_y) = map_size_y;
 
 m_zi(m_zi <= 1) = 1;
 m_zf(m_zf >= map_size_z) = map_size_z;
+
+m_startx(m_startx <= 1) = 1;
+m_zf(m_zf >= map_size_z) = map_size_z;
+
+
+m_zi(m_zi <= 1) = 1;
+m_zf(m_zf >= map_size_z) = map_size_z;
+
 
 
 
@@ -165,6 +218,9 @@ map{1} = occp_grid;
 map{2} = [xi, yi, zi, xf, yf, zf, r, g, b];
 map{3} = [bound_xi bound_yi bound_zi bound_xf bound_yf bound_zf xy_res z_res margin];
 map{4} = [map_size_x, map_size_y, map_size_z];
+map{5} = [robots objectives];
+map{6} = start;
+map{7} = goals;
 end
 
 
