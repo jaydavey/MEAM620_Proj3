@@ -27,11 +27,17 @@ addpath('./A_Star')
 
 R = 0.1; % Radius of robot in meters
 vel = 1; % m/s velocity for robots
+video_on = 1;
+
+if(video_on)
+    writerObj = VideoWriter('CaseB.avi');
+    open(writerObj);
+end
 
 %% Read Map
 %We read the maps with all the information available at
 %/Maps directory
-map = load_map('map1.txt', 2*R*sqrt(2), 5, 0); % map = load_map(filename, xy_res, z_res, margin)
+map = load_map('map0.txt', 2*R*sqrt(2), 5, 0); % map = load_map(filename, xy_res, z_res, margin)
 
 
 occp_grid = map{1};
@@ -128,6 +134,12 @@ end
 % find assignments between start and goals
 [assignment,cost] = munkres(D);
 
+%Get cumulative cost
+robot_cost = zeros(Nr,1);
+for(i=1:Nr)
+    robot_cost(i) = D(i,assignment(i));
+end
+
 %From assignments, get path for each robot
 robot_paths = cell(Nr,1);
 robot_paths_xy = cell(Nr,1);
@@ -166,6 +178,97 @@ S;
 G;
 
 
+%% Get Order
+
+Ppriority1 = zeros(Nr,Nr);
+Ppriority2 = zeros(Nr,Nr);
+
+for (i=1:Nr)
+    for (j=1:Nr)
+        
+        if(i~=j)
+            %Find if Si is in P*j
+            si = find(robot_paths{j} == robot_paths{i}(1));
+            
+            if(~isempty(si))
+                Ppriority1(i,j) = 1;
+            end
+            
+            %Find if Gi is in P*j
+            gi = find(robot_paths{j} == robot_paths{i}(end));
+            
+            if(~isempty(gi))
+                Ppriority2(j,i) = 1;
+            end
+        end
+    end
+end
+
+
+PpTotal = Ppriority1 + Ppriority2;
+xg = [];
+yg = [];
+for (i=1:Nr)
+    for(j=1:Nr)
+        
+        if(PpTotal(i,j)~=0)
+           xg = [xg i]; 
+           yg = [yg j];
+        end
+        
+    end
+    
+end
+
+
+
+
+%TODO: Handle ties!
+order_graph = sparse(xg,yg,true,Nr,Nr);
+if(isempty(xg))
+    [~,order] = sort(robot_cost);
+else
+    order = graphtopoorder(order_graph);
+end
+
+%% Define Start time
+time_offset = zeros(Nr,1);
+
+for(i=2:Nr)
+    
+    max_time = 0;
+    for(j=i:-1:1)
+        %Get common trayectories
+        a = robot_paths{order(i)};
+        b = robot_paths{order(j)};
+        [C,ia,ib] = intersect(a,b);
+        %Get max time diference
+        time_delta = +robot_time_traj{order(i)}(ia)-robot_time_traj{order(j)}(ib);
+        
+        if(max(time_delta)<0)
+            p = order(i);
+            order(i) = order(j);
+            order(j) = p;
+            time_delta = abs(time_delta);
+        end
+        
+        
+        if(max_time < max(time_delta) )
+            max_time = max(time_delta);
+            max_time = 1.2; %Better Results
+            
+        end
+        time_offset(i) = time_offset(i-1) + max_time/vel;
+    
+    end
+end
+
+%Add times
+for(i=1:Nr)
+    robot_time_traj{i} = robot_time_traj{i} + time_offset(order(i));
+    
+end
+
 
 %% Parameters
 
@@ -174,7 +277,7 @@ move_time_flag = ones(Nr,1);
 move_time = zeros(Nr,1);
 
 %% Animation
-max_iter = 5000;
+max_iter = 200;
 real_time = 1;
 cstep     = 0.05;      % image capture time interval
 time = 0;
@@ -221,12 +324,21 @@ for iter = 1:max_iter
         pause(cstep - t);
     end
     
+    if(video_on)
+        %Get Movie Frame
+        frame = getframe(gcf);
+        writeVideo(writerObj,frame);
+        set(gca,'nextplot','replacechildren');
+    end
     
     
 end
 
 
-
+if(video_on)
+    %Get Movie Frame
+    close(writerObj);
+end
 
 
 

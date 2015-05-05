@@ -45,9 +45,9 @@ bound_zi = bounds(3);
 bound_xf = bounds(4);
 bound_yf = bounds(5);
 bound_zf = bounds(6);
-xy_res   = bounds(7);
-z_res    = bounds(8);
-margin   = bounds(9);
+xy_res   = 1;
+z_res    = 1;
+margin   = 0;
 %End Extract data from map{}
 
 
@@ -124,9 +124,9 @@ a = Rows;
 b = Cols;
 c = W;
 
-    a = (a-1)*xy_res + 0.5*xy_res + bound_xi; 
-    b = (b-1)*xy_res + 0.5*xy_res + bound_yi;
-    c = (c-1)*z_res + 0.5*z_res + bound_zi;
+    a = (a-1)*xy_res  + bound_xi; 
+    b = (b-1)*xy_res + bound_yi;
+    c = (c-1)*z_res  + bound_zi;
     
     a(start_i) = start(1); 
     b(start_i) = start(2);

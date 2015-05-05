@@ -26,12 +26,12 @@ addpath('./A_Star')
 %% Program variables
 
 R = 0.1; % Radius of robot in meters
-vel = 0.1; % m/s velocity for robots
+vel = 1; % m/s velocity for robots
 
 %% Read Map
 %We read the maps with all the information available at
 %/Maps directory
-map = load_map('map0.txt', 2*R*sqrt(2), 5, R); % map = load_map(filename, xy_res, z_res, margin)
+map = load_map('map0.txt', 2*R*sqrt(2), 5, 0); % map = load_map(filename, xy_res, z_res, margin)
 
 
 occp_grid = map{1};
@@ -60,9 +60,11 @@ robot_pos = start;
 % Define the extents of the robot's stage area (the area that the robots
 % will fly in
 zmax = 0; zmin = 0; %meters
-[ plot_handler ] = Plot2DGrid( occp_grid );
-PlotObjectives( plot_handler, start, goals );
-PlotRobots(plot_handler, robot_pos, R);
+
+
+%Plot2DGrid( occp_grid );
+%PlotObjectives( plot_handler, start, goals );
+%PlotRobots(plot_handler, robot_pos, R);
 
 
 %% Do Dijkstra Algorithm
@@ -75,7 +77,7 @@ D = zeros(Nr, Ng);
 for i=1:Nr
     for j=1:Ng
 
-        [p, cost] = dijkstra(map, start_val(i,:), goals_val(j,:), 0);
+        [p, cost] = dijkstra(map, start(i,:), goals(j,:), 0);
         prev{i,j} = p;
         D(i,j) = cost;
         
@@ -126,6 +128,12 @@ end
 % find assignments between start and goals
 [assignment,cost] = munkres(D);
 
+%Get cumulative cost
+robot_cost = zeros(Nr,1);
+for(i=1:Nr)
+    robot_cost(i) = D(i,assignment(i));
+end
+
 %From assignments, get path for each robot
 robot_paths = cell(Nr,1);
 robot_paths_xy = cell(Nr,1);
@@ -147,12 +155,13 @@ end
 
 robot_vector = cell(Nr,1);
 robot_vector_dist = cell(Nr,1);
-robot_time_traj = cell(Nr,1);
-
+robot_time_traj = cell(Nr,1); %Cummulative time of all path to point X
+robot_indv_time = cell(Nr,1); %Individual time of each paths
 for(i=1:Nr)
     robot_vector{i} = diff(robot_paths_xy{i});
     robot_vector_dist{i} = sqrt(sum(diff(robot_paths_xy{i}).^2,2));
-    robot_time_traj{i} = cumsum(robot_vector_dist{i}./vel); 
+    robot_indv_time{i} = robot_vector_dist{i}./vel;
+    robot_time_traj{i} = [0; cumsum(robot_indv_time{i})]; 
 end
 
 
@@ -162,6 +171,96 @@ S;
 %Goal Locations (meters):
 G;
 
+
+%% Get Order
+
+Ppriority1 = zeros(Nr,Nr);
+Ppriority2 = zeros(Nr,Nr);
+
+for (i=1:Nr)
+    for (j=1:Nr)
+        
+        if(i~=j)
+            %Find if Si is in P*j
+            si = find(robot_paths{j} == robot_paths{i}(1));
+            
+            if(~isempty(si))
+                Ppriority1(i,j) = 1;
+            end
+            
+            %Find if Gi is in P*j
+            gi = find(robot_paths{j} == robot_paths{i}(end));
+            
+            if(~isempty(gi))
+                Ppriority2(j,i) = 1;
+            end
+        end
+    end
+end
+
+
+PpTotal = Ppriority1 + Ppriority2;
+xg = [];
+yg = [];
+for (i=1:Nr)
+    for(j=1:Nr)
+        
+        if(PpTotal(i,j)~=0)
+           xg = [xg i]; 
+           yg = [yg j];
+        end
+        
+    end
+    
+end
+
+
+
+
+%TODO: Handle ties!
+order_graph = sparse(xg,yg,true,Nr,Nr);
+if(isempty(order_graph))
+    [~,order] = sort(robot_cost);
+else
+    order = graphtopoorder(order_graph);
+end
+
+%% Define Start time
+time_offset = zeros(Nr,1);
+
+for(i=2:Nr)
+    
+    max_time = 0;
+    for(j=i:-1:1)
+        %Get common trayectories
+        a = robot_paths{order(i)};
+        b = robot_paths{order(j)};
+        [C,ia,ib] = intersect(a,b);
+        %Get max time diference
+        time_delta = +robot_time_traj{order(i)}(ia)-robot_time_traj{order(j)}(ib);
+        
+        if(max(time_delta)<0)
+            p = order(i);
+            order(i) = order(j);
+            order(j) = p;
+            time_delta = abs(time_delta);
+        end
+        
+        
+        if(max_time < max(time_delta) )
+            max_time = max(time_delta);
+            
+        end
+        time_offset(i) = time_offset(i-1) + max_time;
+    
+    end
+end
+
+%Add times
+for(i=1:Nr)
+    robot_time_traj{i} = robot_time_traj{i} + 1/vel;
+    
+end
 
 
 %% Parameters
@@ -174,25 +273,31 @@ move_time = zeros(Nr,1);
 max_iter = 5000;
 real_time = 1;
 cstep     = 0.05;      % image capture time interval
-
-
+time = 0;
+t = 0;
 for iter = 1:max_iter
 
      tic;
      if iter == 1
-         [ plot_handler ] = Plot2DGrid( occp_grid );
-         PlotObjectives( plot_handler, start, goals );
-         PlotRobots(plot_handler, robot_pos, R);
+         plot_handler = figure();
+         figure(plot_handler);
+         Plot2DGrid( occp_grid,xmin,ymin );
+         PlotObjectives( plot_handler, start, goals, xmin,ymin );
+         [robot_handles, text_handles] = PlotRobots(plot_handler, robot_pos, R, Nr);
+         h_title = title(sprintf('iteration: %d, time: %4.2f', iter, time));
      end
      
         %Update Robot Positions
-         [ plot_handler ] = Plot2DGrid( occp_grid );
-         PlotObjectives( plot_handler, start, goals );
+        figure(plot_handler);
+         %Plot2DGrid( occp_grid );
+         %PlotObjectives( plot_handler, start, goals );
+         
          
          for (i=1:Nr)
-            UpdateRobotPlot(t, i, robot_vector{i}, robot_vector_dist{i}, robot_time_traj{i},robot_paths_xy{i} )
+            UpdateRobotPlot(time, i, robot_vector{i}, robot_vector_dist{i}, robot_time_traj{i},robot_indv_time{i}, robot_paths_xy{i}, robot_handles{i}, text_handles{i} );
          end
-     
+         
+        drawnow();
      % Update plot
 
      set(h_title, 'String', sprintf('iteration: %d, time: %4.2f', iter, time + cstep))
